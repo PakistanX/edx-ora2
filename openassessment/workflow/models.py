@@ -147,6 +147,59 @@ class AssessmentWorkflow(TimeStampedModel, StatusModel):
         """
         submission_dict = sub_api.get_submission_and_student(submission_uuid)
 
+        if 'staff' in step_names:
+            from django.conf import settings
+            from django.contrib.sites.models import Site
+            from edx_ace import Recipient, ace
+            from opaque_keys.edx.keys import CourseKey
+            from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
+            from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+            from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
+            from openedx.core.lib.celery.task_utils import emulate_http_request
+            from openedx.features.pakx.lms.pakx_admin_app.message_types import OraStaffNotification
+            from student.roles import CourseStaffRole
+            from crum import get_current_request
+
+            def extract_user_info(user):
+                """ convert user into dicts for json view """
+
+                return {
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                }
+
+            request = get_current_request()
+            site = Site.objects.get_current()
+            email_context = get_base_template_context(site, request.user)
+            course_key = submission_dict['student_item']['course_id']
+            course_staff = CourseStaffRole(CourseKey.from_string(course_key)).users_with_role()
+            course_staff = list(map(extract_user_info, course_staff))
+
+            course_overview = CourseOverview.objects.get(id=CourseKey.from_string(course_key))
+            email_context.update({
+                'course': course_overview.display_name,
+                'url': "https://{}/courses/{}/overview".format(site.domain, course_key),
+                'user': request.user,
+                'block_id': submission_dict['student_item']['item_id'],
+            })
+
+            with emulate_http_request(site, request.user):
+                email_context.update({
+                    'site_name': site.domain,
+                    'platform_name': configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
+                })
+
+                for recipient in course_staff:
+                    message = OraStaffNotification().personalize(
+                        recipient=Recipient(recipient['username'], recipient['email']),
+                        language='en',
+                        user_context=email_context,
+                    )
+                    ace.send(message)
+
         staff_auto_added = False
         if 'staff' not in step_names:
             staff_auto_added = True
