@@ -90,36 +90,28 @@ class PeerAssessmentMixin:
                     assessment_ui_model['must_be_graded_by']
                 )
 
-                from django.conf import settings
                 from django.contrib.sites.models import Site
                 from edx_ace import Recipient, ace
                 from opaque_keys.edx.keys import CourseKey
                 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
                 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-                from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-
                 from openedx.core.lib.celery.task_utils import emulate_http_request
                 from openedx.features.pakx.lms.pakx_admin_app.message_types import OraGradeNotification
+                from submissions import api as sub_api
 
                 site = Site.objects.get_current()
-                submission_user = self.get_real_user(self.get_student_item_dict()["student_id"])
+                submission_dict = sub_api.get_submission_and_student(assessment['submission_uuid'])
+                submission_user = self.get_real_user(submission_dict['student_item']['student_id'])
                 email_context = get_base_template_context(site, submission_user)
                 course_key = self.get_student_item_dict()["course_id"]
 
                 course_overview = CourseOverview.objects.get(id=CourseKey.from_string(course_key))
                 email_context.update({
-                    'course': course_overview.display_name,
-                    'url': "https://{}/courses/{}/".format(site.domain, course_key),
-                    'username': submission_user.username,
-                    'block_id': self.get_student_item_dict()['item_id'],
+                    'course_name': course_overview.display_name,
+                    'unit_url': "https://ilmx.org/courses/{}/jump_to/{}".format(course_key, submission_dict['student_item']['item_id'].replace('openassessment', 'vertical')),
                 })
 
                 with emulate_http_request(site, submission_user):
-                    email_context.update({
-                        'site_name': site.domain,
-                        'platform_name': configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
-                    })
-
                     message = OraGradeNotification().personalize(
                         recipient=Recipient(submission_user.username, submission_user.email),
                         language='en',

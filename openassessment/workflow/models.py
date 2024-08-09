@@ -148,13 +148,11 @@ class AssessmentWorkflow(TimeStampedModel, StatusModel):
         submission_dict = sub_api.get_submission_and_student(submission_uuid)
 
         if 'staff' in step_names:
-            from django.conf import settings
             from django.contrib.sites.models import Site
             from edx_ace import Recipient, ace
             from opaque_keys.edx.keys import CourseKey
             from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
             from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-            from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
             from openedx.core.lib.celery.task_utils import emulate_http_request
             from openedx.features.pakx.lms.pakx_admin_app.message_types import OraStaffNotification
@@ -180,18 +178,11 @@ class AssessmentWorkflow(TimeStampedModel, StatusModel):
 
             course_overview = CourseOverview.objects.get(id=CourseKey.from_string(course_key))
             email_context.update({
-                'course': course_overview.display_name,
-                'url': "https://{}/courses/{}/overview".format(site.domain, course_key),
-                'user': request.user,
-                'block_id': submission_dict['student_item']['item_id'],
+                'course_name': course_overview.display_name,
+                'unit_url': "https://studio.ilmx.org/container/{}".format(submission_dict['student_item']['item_id'].replace('openassessment', 'vertical')),
             })
 
             with emulate_http_request(site, request.user):
-                email_context.update({
-                    'site_name': site.domain,
-                    'platform_name': configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
-                })
-
                 for recipient in course_staff:
                     message = OraStaffNotification().personalize(
                         recipient=Recipient(recipient['username'], recipient['email']),
