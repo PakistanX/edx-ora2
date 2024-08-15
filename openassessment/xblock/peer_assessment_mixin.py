@@ -109,6 +109,7 @@ class PeerAssessmentMixin:
                 email_context.update({
                     'course_name': course_overview.display_name,
                     'unit_url': "https://ilmx.org/courses/{}/jump_to/{}".format(course_key, submission_dict['student_item']['item_id'].replace('openassessment', 'vertical')),
+                    'reviewed_by': "a peer",
                 })
 
                 with emulate_http_request(site, submission_user):
