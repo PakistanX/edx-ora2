@@ -61,6 +61,8 @@ class StaffAssessmentMixin:
             from openedx.core.lib.celery.task_utils import emulate_http_request
             from openedx.features.pakx.lms.pakx_admin_app.message_types import OraGradeNotification
             from submissions import api as sub_api
+            from xmodule.modulestore.django import modulestore
+            from opaque_keys.edx.keys import UsageKey
 
             site = Site.objects.get_current()
             submission_dict = sub_api.get_submission_and_student(assessment['submission_uuid'])
@@ -69,9 +71,12 @@ class StaffAssessmentMixin:
             course_key = self.get_student_item_dict()["course_id"]
 
             course_overview = CourseOverview.objects.get(id=CourseKey.from_string(course_key))
+            xblock_id = UsageKey.from_string(self.get_student_item_dict()['item_id'])
+            block = modulestore().get_item(xblock_id)
+            location_id = block.parent
             email_context.update({
                 'course_name': course_overview.display_name,
-                'unit_url': "https://ilmx.org/courses/{}/jump_to/{}".format(course_key, self.get_student_item_dict()['item_id'].replace('openassessment', 'vertical')),
+                'unit_url': "https://ilmx.org/courses/{}/jump_to/{}".format(course_key, location_id),
                 'reviewed_by': "the instructor",
             })
 

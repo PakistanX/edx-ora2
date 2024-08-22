@@ -26,12 +26,20 @@
                     {% endif %}
                     <div><img class="submission__answer__file submission--image" src="{{ file_url }}"
                             aria-labelledby="file_description_{{ xblock_id }}_{{ including_template }}_{{ forloop.counter0 }}" /></div>
-                {% elif file_upload_type == "pdf-and-image" or file_upload_type == "custom" %}
+                {% elif file_upload_type == "pdf-and-image" %}
                     <a href="{{ file_url }}" class="submission__answer__file submission--file" target="_blank">
                         {% if file_description %}
                         {{ file_description }} ( {{file_name}} )
                         {% else %}
                         {% trans "View the files associated with this submission:" %} #{{ forloop.counter }}
+                        {% endif %}
+                    </a>
+                {% elif file_upload_type == "custom" %}
+                    <a href="{{ file_url }}" class="submission__answer__file submission--file" target="_blank" download="{{file_name}}">
+                        {% if file_description %}
+                        {{ file_description }} ( {{file_name}} )
+                        {% else %}
+                        {% trans "Download the files associated with this submission:" %} #{{ forloop.counter }}
                         {% endif %}
                     </a>
                 {% endif %}

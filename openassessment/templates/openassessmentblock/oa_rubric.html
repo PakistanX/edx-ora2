@@ -9,7 +9,7 @@
             <div class="question__title ui-slidable__control">
                 <button class="ui-slidable" aria-expanded="true" id="oa_rubric__{{ rubric_type }}__{{ submission.uuid }}__{{ criterion.order_num }}" aria-controls="oa_rubric__{{ rubric_type }}__{{ submission.uuid }}__{{ criterion.order_num }}__content">
                     <span class="icon fa fa-caret-right" aria-hidden="true"></span>
-                    <span id="{{ rubric_type }}__assessment__rubric__prompt--{{ criterion.order_num }}" class="ui-slidable__control__copy question__title__copy">{{ criterion.prompt }}</span>
+                    <span id="{{ rubric_type }}__assessment__rubric__prompt--{{ criterion.order_num }}" class="ui-slidable__control__copy question__title__copy">{{ criterion.label }}<br>{{ criterion.prompt }}</span>
                     <span class="label--required sr">({% trans "Required" %})</span>
                 </button>
             </div>

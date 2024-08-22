@@ -158,6 +158,8 @@ class AssessmentWorkflow(TimeStampedModel, StatusModel):
             from openedx.features.pakx.lms.pakx_admin_app.message_types import OraStaffNotification
             from student.roles import CourseStaffRole
             from crum import get_current_request
+            from xmodule.modulestore.django import modulestore
+            from opaque_keys.edx.keys import UsageKey
 
             def extract_user_info(user):
                 """ convert user into dicts for json view """
@@ -177,9 +179,12 @@ class AssessmentWorkflow(TimeStampedModel, StatusModel):
             course_staff = list(map(extract_user_info, course_staff))
 
             course_overview = CourseOverview.objects.get(id=CourseKey.from_string(course_key))
+            xblock_id = UsageKey.from_string(submission_dict['student_item']['item_id'])
+            block = modulestore().get_item(xblock_id)
+            location_id = block.parent
             email_context.update({
                 'course_name': course_overview.display_name,
-                'unit_url': "https://studio.ilmx.org/container/{}".format(submission_dict['student_item']['item_id'].replace('openassessment', 'vertical')),
+                'unit_url': "https://studio.ilmx.org/container/{}".format(location_id),
             })
 
             with emulate_http_request(site, request.user):
