@@ -9,11 +9,16 @@ import json
 
 import six
 
+from django.apps import apps
 from django.conf import settings
 
 from openassessment.assessment.models import Assessment, AssessmentFeedback, AssessmentPart
 from openassessment.workflow.models import AssessmentWorkflow, TeamAssessmentWorkflow
 from submissions import api as sub_api
+
+
+AnonUser = apps.get_model('student', 'AnonymousUserId')
+User = apps.get_model('auth', 'User')
 
 
 class CsvWriter:
@@ -473,10 +478,21 @@ class OraAggregateData:
             feedback_options_cell = cls._build_feedback_options_cell(assessments)
             feedback_cell = cls._build_feedback_cell(submission['uuid'])
 
+            anon_user = AnonUser.objects.filter(
+                anonymous_user_id=student_item['student_id'],
+                course_id=course_id
+            ).first()
+
+            if anon_user is not None:
+                user = User.objects.filter(
+                    id=anon_user.user_id
+                ).first()
+
             row = [
                 submission['uuid'],
                 submission['student_item'],
                 student_item['student_id'],
+                user.email if anon_user and user else student_item['student_id'],
                 submission['submitted_at'],
                 #  Dumping required to render special characters in CSV
                 json.dumps(submission['answer'], ensure_ascii=False),
@@ -494,6 +510,7 @@ class OraAggregateData:
             'Submission ID',
             'Item ID',
             'Anonymized Student ID',
+            'Real Student Email',
             'Date/Time Response Submitted',
             'Response',
             'Assessment Details',
