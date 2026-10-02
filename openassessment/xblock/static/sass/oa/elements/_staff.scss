@@ -217,6 +217,82 @@
   // Styling for staff grade tab ("Grade Available Responses").
   .ui-staff {
 
+    // bulk download of learner submissions
+    .staff__grade__download {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: ($baseline-v/2) $baseline-v;
+      margin-bottom: ($baseline-v/2);
+      border-radius: ($baseline-v/10);
+      background: $bg-content;
+
+      .staff__grade__download__info {
+        @include margin-right($baseline-h);
+        flex: 1 1 250px;
+        margin-top: ($baseline-v/4);
+        margin-bottom: ($baseline-v/4);
+      }
+
+      .staff__grade__download__title {
+        @extend %t-strong;
+        @include fontSize($f-size-medium);
+        margin: 0 0 ($baseline-v/4) 0;
+        color: $heading-color;
+      }
+
+      .staff__grade__download__message {
+        @include fontSize($f-size-base);
+        margin: 0;
+        color: $gray-l1;
+      }
+
+      .staff__grade__download__actions {
+        display: flex;
+        flex-wrap: wrap;
+        flex: 0 0 auto;
+        margin: ($baseline-v/4) 0;
+      }
+
+      .staff__grade__download__generate,
+      .staff__grade__download__button {
+        @include fontSize($f-size-base);
+        margin: ($baseline-v/4) 0;
+        padding: ($baseline-v/2) ($baseline-h/2);
+        white-space: nowrap;
+
+        .icon {
+          @include margin-right($baseline-h/4);
+        }
+
+        &.is--hidden {
+          display: none;
+        }
+      }
+
+      .staff__grade__download__generate {
+        @extend %btn--secondary;
+
+        &[disabled] {
+          cursor: progress;
+        }
+      }
+
+      .staff__grade__download__button {
+        @extend %btn--primary;
+        @include margin-left($baseline-h/4);
+
+        &:hover, &:active, &:focus {
+          color: $copy-inverse-color;
+        }
+      }
+
+      &.is--failed .staff__grade__download__message {
+        color: $color-error;
+      }
+    }
+
     .staff__grade__control {
       border-top: ($baseline-v/4) solid $color-decorative-tertiary;
       background: $bg-content;

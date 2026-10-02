@@ -31,6 +31,16 @@ class Backend(BaseBackend):
             return default_storage.url(path)
         return None
 
+    def get_file_content(self, key):
+        """
+        Return the raw bytes of the keyed file, or None if it does not exist.
+        """
+        path = self._get_file_path(key)
+        if not default_storage.exists(path):
+            return None
+        with default_storage.open(path, 'rb') as stored_file:
+            return stored_file.read()
+
     def upload_file(self, key, content):
         """
         Upload the given file content to the keyed location.

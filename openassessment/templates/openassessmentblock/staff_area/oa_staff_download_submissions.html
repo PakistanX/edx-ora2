@@ -1,0 +1,20 @@
+{% load i18n %}
+
+<div class="staff__grade__download" data-export-status="{{ submissions_export_status_json }}">
+    <div class="staff__grade__download__info">
+        <p class="staff__grade__download__title">{% trans "All Submissions" %}</p>
+        <p class="staff__grade__download__message" aria-live="polite">
+            {% trans "Prepare a zip file of every learner's uploaded files and text responses." %}
+        </p>
+    </div>
+    <div class="staff__grade__download__actions">
+        <button type="button" class="staff__grade__download__generate">
+            <span class="icon fa fa-file-archive-o" aria-hidden="true"></span>
+            <span class="staff__grade__download__generate__label">{% trans "Prepare Download" %}</span>
+        </button>
+        <a class="staff__grade__download__button is--hidden" href="{{ submissions_export_download_url }}" download>
+            <span class="icon fa fa-download" aria-hidden="true"></span>
+            <span class="staff__grade__download__label">{% trans "Download All Submissions" %}</span>
+        </a>
+    </div>
+</div>

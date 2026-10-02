@@ -44,6 +44,15 @@ class Backend(BaseBackend):
         make_download_url_available(self._get_key_name(key), self.DOWNLOAD_URL_TIMEOUT)
         return self._get_url(key)
 
+    def get_file_content(self, key):
+        import os
+        from openassessment.fileupload.views_filesystem import get_file_path
+        file_path = get_file_path(self._get_key_name(key))
+        if not os.path.exists(file_path):
+            return None
+        with open(file_path, 'rb') as stored_file:
+            return stored_file.read()
+
     def remove_file(self, key):
         from openassessment.fileupload.views_filesystem import safe_remove, get_file_path
         return safe_remove(get_file_path(self._get_key_name(key)))

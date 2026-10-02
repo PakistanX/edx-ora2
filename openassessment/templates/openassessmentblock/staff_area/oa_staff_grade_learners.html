@@ -1,5 +1,9 @@
 {% load i18n %}
 
+{% if submissions_export_status_json %}
+    {% include "openassessmentblock/staff_area/oa_staff_download_submissions.html" %}
+{% endif %}
+
 <div class="staff__grade__control ui-slidable__container">
     <header class="staff__grade__header ui-slidable__control">
         <h3 class="staff__grade__title">

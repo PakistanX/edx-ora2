@@ -112,6 +112,25 @@ class BaseBackend(six.with_metaclass(abc.ABCMeta, object)):
         """
         raise NotImplementedError
 
+    def get_file_content(self, key):
+        """
+        Returns the raw bytes of the file stored for the given key.
+
+        The default implementation fetches the file from its (absolute) download URL.
+        Backends that can read their storage directly should override this.
+
+        Returns:
+            bytes, or None if no file is found.
+        """
+        import requests
+
+        url = self.get_download_url(key)
+        if not url:
+            return None
+        response = requests.get(url, timeout=60)
+        response.raise_for_status()
+        return response.content
+
     @abc.abstractmethod
     def remove_file(self, key):
         """

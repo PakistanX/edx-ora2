@@ -41,6 +41,13 @@ def get_download_url(key):
     return url
 
 
+def get_file_content(key):
+    """
+    Returns the raw bytes of the file that corresponds to the key, or None if it doesn't exist.
+    """
+    return backends.get_backend().get_file_content(key)
+
+
 def remove_file(key):
     """
     Remove file from the storage

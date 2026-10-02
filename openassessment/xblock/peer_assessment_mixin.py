@@ -73,7 +73,7 @@ class PeerAssessmentMixin:
             )
             return {
                 'success': False,
-                'msg': self._('This feedback has already been submitted or the submission has been cancelled.'),
+                'msg': self._('This feedback has already been submitted or the submission has been cancelled. If you believe this is an error, please try refreshing the page or reach out to ilmX support.'),
             }
 
         assessment_ui_model = self.get_assessment_module('peer-assessment')
