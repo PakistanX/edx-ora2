@@ -64,8 +64,8 @@ class MFEHandlersTestBase(XBlockHandlerTestCase):
         base_url = 'www.downloadfiles.xyz/'
         with patch("openassessment.fileupload.api.get_download_url") as mock_unsubmitted_urls:
             with patch("openassessment.data.get_download_url") as mock_submitted_urls:
-                mock_submitted_urls.side_effect = lambda file_key: base_url + file_key
-                mock_unsubmitted_urls.side_effect = expected_file_urls.get
+                mock_submitted_urls.side_effect = lambda file_key, file_name=None: base_url + file_key
+                mock_unsubmitted_urls.side_effect = lambda key, file_name=None: expected_file_urls.get(key)
                 yield
 
     DEFAULT_DRAFT_VALUE = {'response': {'textResponses': ['hi']}}

@@ -750,6 +750,8 @@ class OpenAssessmentBlock(
             context_dict.update(
                 self.get_staff_assessment_statistics_context(student_item["course_id"], student_item["item_id"])
             )
+            # ilmX: "Download All Submissions" control
+            context_dict.update(self.get_download_all_submissions_context())
 
         template = get_template('legacy/instructor_dashboard/oa_grade_available_responses.html')
 
