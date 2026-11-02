@@ -26,12 +26,21 @@
                     {% endif %}
                     <div><img class="submission__answer__file submission--image" src="{{ file.download_url }}"
                             aria-labelledby="file_description_{{ xblock_id }}_{{ including_template }}_{{ forloop.counter0 }}" /></div>
-                {% elif file_upload_type == "pdf-and-image" or file_upload_type == "custom" %}
+                {% elif file_upload_type == "pdf-and-image" %}
                     <a href="{{ file.download_url }}" class="submission__answer__file submission--file" target="_blank">
                         {% if file.description %}
                         {{ file.description }} ( {{file.name}} )
                         {% else %}
                         {% trans "View the files associated with this submission:" %} #{{ forloop.counter }}
+                        {% endif %}
+                    </a>
+                {% elif file_upload_type == "custom" %}
+                    {# ilmX: custom file types are downloaded (with their original name) rather than opened #}
+                    <a href="{{ file.download_url }}" class="submission__answer__file submission--file" target="_blank" download="{{ file.name }}">
+                        {% if file.description %}
+                        {{ file.description }} ( {{file.name}} )
+                        {% else %}
+                        {% trans "Download the files associated with this submission:" %} #{{ forloop.counter }}
                         {% endif %}
                     </a>
                 {% endif %}

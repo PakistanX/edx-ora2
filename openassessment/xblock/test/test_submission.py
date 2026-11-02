@@ -670,7 +670,7 @@ class SubmissionTest(SubmissionXBlockHandlerTestCase, SubmissionTestMixin):
             self.assertEqual(expected_urls, actual_urls)
 
             mock_download_url.assert_has_calls([
-                call('key-1'), call('key-2'), call('key-3')
+                call('key-1', file_name='name-1'), call('key-2', file_name=None), call('key-3', file_name='name-3')
             ])
 
     @scenario('data/submission_open.xml', user_id="Bob")
@@ -699,7 +699,7 @@ class SubmissionTest(SubmissionXBlockHandlerTestCase, SubmissionTestMixin):
             ]
             self.assertEqual(expected_urls, actual_urls)
 
-            mock_download_url.assert_has_calls([call('key-1')])
+            mock_download_url.assert_has_calls([call('key-1', file_name='')])
 
     @scenario('data/submission_open.xml', user_id="Red Five")
     def test_get_team_context_exceptions(self, xblock):

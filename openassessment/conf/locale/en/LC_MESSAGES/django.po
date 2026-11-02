@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: edx-ora2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-13 17:55-0500\n"
+"POT-Creation-Date: 2026-10-30 16:57+0000\n"
 "PO-Revision-Date: 2014-06-04 15:41-0400\n"
 "Last-Translator: Muhammad Ayub khan <ayubkhan@edx.org>\n"
 "Language-Team: openedx-translation <openedx-translation@googlegroups.com>\n"
@@ -65,101 +65,101 @@ msgstr ""
 msgid "Unknown"
 msgstr ""
 
-#: data.py:584
+#: data.py:597
 #, python-brace-format
 msgid "Criterion {number}: {label}"
 msgstr ""
 
-#: data.py:586
+#: data.py:599
 #, python-brace-format
 msgid "Points {number}"
 msgstr ""
 
-#: data.py:587
+#: data.py:600
 #, python-brace-format
 msgid "Median Score {number}"
 msgstr ""
 
-#: data.py:588
+#: data.py:601
 #, python-brace-format
 msgid "Feedback {number}"
 msgstr ""
 
-#: data.py:917
+#: data.py:946
 msgid "Item ID"
 msgstr ""
 
-#: data.py:918
+#: data.py:947
 msgid "Submission ID"
 msgstr ""
 
-#: data.py:930
+#: data.py:959
 msgid "Anonymized Student ID"
 msgstr ""
 
-#: data.py:961
+#: data.py:990
 msgid "Assessment ID"
 msgstr ""
 
-#: data.py:962
+#: data.py:991
 msgid "Assessment Scored Date"
 msgstr ""
 
-#: data.py:963
+#: data.py:992
 msgid "Assessment Scored Time"
 msgstr ""
 
-#: data.py:964
+#: data.py:993
 msgid "Assessment Type"
 msgstr ""
 
-#: data.py:965
+#: data.py:994
 msgid "Anonymous Scorer Id"
 msgstr ""
 
-#: data.py:967
+#: data.py:996
 #: templates/legacy/staff_area/oa_student_info_assessment_detail.html:59
 msgid "Overall Feedback"
 msgstr ""
 
-#: data.py:968
+#: data.py:997
 msgid "Assessment Score Earned"
 msgstr ""
 
-#: data.py:969
+#: data.py:998
 msgid "Assessment Scored At"
 msgstr ""
 
-#: data.py:970
+#: data.py:999
 msgid "Date/Time Final Score Given"
 msgstr ""
 
-#: data.py:971
+#: data.py:1000
 msgid "Final Score Earned"
 msgstr ""
 
-#: data.py:972
+#: data.py:1001
 msgid "Final Score Possible"
 msgstr ""
 
-#: data.py:973
+#: data.py:1002
 msgid "Feedback Statements Selected"
 msgstr ""
 
-#: data.py:974
+#: data.py:1003
 msgid "Feedback on Assessment"
 msgstr ""
 
-#: data.py:976
+#: data.py:1005
 msgid "Response Files"
 msgstr ""
 
-#: data.py:1367
+#: data.py:1569
 msgid "No description provided."
 msgstr ""
 
-#: data.py:1626 templates/legacy/edit/oa_edit_criterion.html:54
-#: xblock/studio_mixin.py:57
+#: data.py:1828 templates/legacy/edit/oa_edit_criterion.html:54
+#: xblock/studio_mixin.py:58
 msgid "None"
 msgstr ""
 
@@ -388,14 +388,14 @@ msgstr ""
 msgid "Feedback for This Criterion"
 msgstr ""
 
-#: templates/legacy/edit/oa_edit_criterion.html:55 xblock/studio_mixin.py:56
+#: templates/legacy/edit/oa_edit_criterion.html:55 xblock/studio_mixin.py:57
 msgid "Optional"
 msgstr ""
 
 #: templates/legacy/edit/oa_edit_criterion.html:56
 #: templates/legacy/oa_rubric.html:13
 #: templates/legacy/student_training/student_training.html:93
-#: xblock/studio_mixin.py:55
+#: xblock/studio_mixin.py:56
 msgid "Required"
 msgstr ""
 
@@ -1214,7 +1214,11 @@ msgstr ""
 msgid "Files that were uploaded by you:"
 msgstr ""
 
-#: templates/legacy/oa_uploaded_file.html:48
+#: templates/legacy/oa_uploaded_file.html:43
+msgid "Download the files associated with this submission:"
+msgstr ""
+
+#: templates/legacy/oa_uploaded_file.html:57
 msgid ""
 "Caution: These files were uploaded by another course learner and have not "
 "been verified, screened, approved, reviewed, or endorsed by the site "
@@ -1573,40 +1577,40 @@ msgstr ""
 msgid "Supported file types: "
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:285
+#: templates/legacy/response/oa_response.html:286
 msgid "Upload files"
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:287
+#: templates/legacy/response/oa_response.html:288
 msgid "Upload file"
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:304
+#: templates/legacy/response/oa_response.html:305
 msgid "This is a team submission."
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:306
+#: templates/legacy/response/oa_response.html:307
 msgid ""
 "One team member should submit a response with the team’s shared files and a "
 "text response on behalf of the entire team."
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:308
+#: templates/legacy/response/oa_response.html:309
 msgid ""
 "One team member should submit a response with the team’s shared files on "
 "behalf of the entire team."
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:310
+#: templates/legacy/response/oa_response.html:311
 msgid ""
 "One team member should submit a text response on behalf of the entire team."
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:312
+#: templates/legacy/response/oa_response.html:313
 msgid "One team member should submit on behalf of the entire team."
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:314
+#: templates/legacy/response/oa_response.html:315
 msgid ""
 "\n"
 "                  Learn more about team assignments here: (<a "
@@ -1616,11 +1620,11 @@ msgid ""
 "                  "
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:322
+#: templates/legacy/response/oa_response.html:323
 msgid "We could not submit your response"
 msgstr ""
 
-#: templates/legacy/response/oa_response.html:333
+#: templates/legacy/response/oa_response.html:334
 msgid "Submit your response and move to the next step"
 msgstr ""
 
@@ -1867,7 +1871,24 @@ msgstr ""
 msgid "N/A"
 msgstr ""
 
-#: templates/legacy/staff_area/oa_staff_grade_learners.html:7
+#: templates/legacy/staff_area/oa_staff_download_submissions.html:5
+msgid "All Submissions"
+msgstr ""
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html:7
+msgid ""
+"Prepare a zip file of every learner's uploaded files and text responses."
+msgstr ""
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html:13
+msgid "Prepare Download"
+msgstr ""
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html:17
+msgid "Download All Submissions"
+msgstr ""
+
+#: templates/legacy/staff_area/oa_staff_grade_learners.html:11
 msgid "Staff Assessment"
 msgstr ""
 
@@ -2382,19 +2403,19 @@ msgstr ""
 msgid "Self Assessment to Staff Assessment"
 msgstr ""
 
-#: xblock/openassessmentblock.py:1358
+#: xblock/openassessmentblock.py:1367
 msgid "You can't reset your submission."
 msgstr ""
 
-#: xblock/openassessmentblock.py:1371
+#: xblock/openassessmentblock.py:1380
 msgid "The user does not exist."
 msgstr ""
 
-#: xblock/openassessmentblock.py:1374
+#: xblock/openassessmentblock.py:1383
 msgid "There is no submission to reset."
 msgstr ""
 
-#: xblock/openassessmentblock.py:1376
+#: xblock/openassessmentblock.py:1385
 msgid "Submission reset successfully."
 msgstr ""
 
@@ -2412,116 +2433,124 @@ msgid ""
 "No Open Response Assessment found in {course_id} with block id {block_id}"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:42
+#: xblock/staff_area_mixin.py:57
 msgid "You do not have permission to schedule training"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:43
+#: xblock/staff_area_mixin.py:58
 msgid "You do not have permission to reschedule tasks."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:69
+#: xblock/staff_area_mixin.py:84
 msgid "You do not have permission to access the ORA staff area"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:70
+#: xblock/staff_area_mixin.py:85
 msgid "You do not have permission to access ORA learner information."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:71
+#: xblock/staff_area_mixin.py:86
 msgid "You do not have permission to access ORA staff grading."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:241
+#: xblock/staff_area_mixin.py:240
+msgid "You do not have permission to download ORA submissions."
+msgstr ""
+
+#: xblock/staff_area_mixin.py:249
+msgid "The submissions download is not available. Please generate it again."
+msgstr ""
+
+#: xblock/staff_area_mixin.py:347
 msgid "Pending"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:242
+#: xblock/staff_area_mixin.py:348
 msgid "Complete/Overwritten"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:245
+#: xblock/staff_area_mixin.py:351
 msgid "Not applicable"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:246
+#: xblock/staff_area_mixin.py:352
 msgid "Not submitted"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:247
+#: xblock/staff_area_mixin.py:353
 msgid "Submitted"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:341
+#: xblock/staff_area_mixin.py:447
 msgid "Error getting learner information."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:384
+#: xblock/staff_area_mixin.py:490
 msgid "Error loading the checked out learner response."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:385
+#: xblock/staff_area_mixin.py:491
 msgid "No other learner responses are available for grading at this time."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:387
+#: xblock/staff_area_mixin.py:493
 msgid "Error getting staff grade information."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:408
+#: xblock/staff_area_mixin.py:514
 msgid "Error getting staff grade ungraded and checked out counts."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:703
+#: xblock/staff_area_mixin.py:809
 msgid "Please enter valid reason to remove the submission."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:714
+#: xblock/staff_area_mixin.py:820
 msgid "Submission not found"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:725
+#: xblock/staff_area_mixin.py:831
 msgid "Submission for team assignment has no associated team submission"
 msgstr ""
 
-#: xblock/staff_area_mixin.py:754
+#: xblock/staff_area_mixin.py:860
 msgid ""
 "The learner submission has been removed from peer assessment. The learner "
 "receives a grade of zero unless you delete the learner's state for the "
 "problem to allow them to resubmit a response."
 msgstr ""
 
-#: xblock/staff_area_mixin.py:789
+#: xblock/staff_area_mixin.py:895
 msgid ""
 "The team’s submission has been removed from grading. The team receives a "
 "grade of zero unless you delete a team member’s state for the problem to "
 "allow the team to resubmit a response."
 msgstr ""
 
-#: xblock/studio_mixin.py:246 xblock/studio_mixin.py:258
+#: xblock/studio_mixin.py:247 xblock/studio_mixin.py:259
 msgid "Error updating XBlock configuration"
 msgstr ""
 
-#: xblock/studio_mixin.py:263
+#: xblock/studio_mixin.py:264
 msgid "Error: Text Response and File Upload Response cannot both be disabled"
 msgstr ""
 
-#: xblock/studio_mixin.py:267
+#: xblock/studio_mixin.py:268
 msgid ""
 "Error: When Text Response is disabled, File Upload Response must be Required"
 msgstr ""
 
-#: xblock/studio_mixin.py:270
+#: xblock/studio_mixin.py:271
 msgid ""
 "Error: When File Upload Response is disabled, Text Response must be Required"
 msgstr ""
 
-#: xblock/studio_mixin.py:294
+#: xblock/studio_mixin.py:295
 #, python-brace-format
 msgid "Validation error: {error}"
 msgstr ""
 
-#: xblock/studio_mixin.py:328
+#: xblock/studio_mixin.py:329
 msgid "Successfully updated OpenAssessment XBlock"
 msgstr ""
 

@@ -650,6 +650,9 @@ class TestOraAggregateData(TransactionCacheResetTest):
     'openassessment.data.OraAggregateData._map_block_usage_keys_to_display_names',
     Mock(return_value=ITEM_DISPLAY_NAMES_MAPPING)
 )
+# ilmX: the upstream expectations below are for the report without the ilmX "Real Student Email"
+# column; that column is covered by openassessment/tests/test_data_ilmx.py
+@override_settings(ILMX_ORA_REPORT_INCLUDE_EMAIL=False)
 class TestOraAggregateDataIntegration(TransactionCacheResetTest):
     """
     Test that OraAggregateData behaves as expected when integrated.
