@@ -2,7 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, "ilmx/**"]
   pull_request:
     branches:
       - "**"
@@ -48,7 +48,8 @@ jobs:
         run: tox
 
       - name: Run Coverage
-        if: matrix.python-version == '3.12' && matrix.toxenv=='django42'
+        # Upstream's Codecov token exists only in openedx/edx-ora2; forks skip the upload.
+        if: github.repository == 'openedx/edx-ora2' && matrix.python-version == '3.12' && matrix.toxenv=='django42'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           flags: unittests
