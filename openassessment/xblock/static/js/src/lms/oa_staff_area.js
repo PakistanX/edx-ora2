@@ -17,6 +17,8 @@ export class StaffAreaView {
 
     OVERRIDE_UNSAVED_WARNING_KEY = 'staff-override';
 
+    SUBMISSIONS_EXPORT_POLL_INTERVAL = 5000;
+
     constructor(element, server, responseEditorLoader, data, baseView) {
       this.element = element;
       this.server = server;
@@ -399,6 +401,9 @@ export class StaffAreaView {
         },
       );
 
+      // ilmX: install the "Download All Submissions" control.
+      view.installSubmissionsExport($staffGradeTool);
+
       // Install a click handler for showing the staff grading form.
       $staffGradeTool.find('.staff__grade__show-form').click(
         (event) => {
@@ -412,6 +417,121 @@ export class StaffAreaView {
         },
       );
       view.confirmDialog = new ConfirmationAlert($staffArea.find('.openassessment__staff-area-dialog-confirm'));
+    }
+
+    /**
+     * ilmX: show the current state of the "all submissions" zip export and install its handlers.
+     *
+     * @param {jQuery} $staffGradeTool The staff grading panel.
+     */
+    installSubmissionsExport($staffGradeTool) {
+      const view = this;
+      const $export = $staffGradeTool.find('.staff__grade__download');
+      if ($export.length === 0) {
+        return;
+      }
+
+      $export.find('.staff__grade__download__generate').click((eventObject) => {
+        eventObject.preventDefault();
+        view.renderSubmissionsExport($export, { status: 'processing' });
+        view.server.startSubmissionsExport().done((status) => {
+          view.renderSubmissionsExport($export, status);
+        }).fail((errorMessage) => {
+          view.renderSubmissionsExport($export, { status: 'failed', message: errorMessage });
+        });
+      });
+
+      view.renderSubmissionsExport($export, $export.data('export-status') || { status: 'none' });
+    }
+
+    /**
+     * ilmX: render the "all submissions" zip export control for the given export status,
+     * polling the server while the export is being processed.
+     *
+     * @param {jQuery} $export The export control.
+     * @param {object} status The export status, as returned by the server.
+     */
+    renderSubmissionsExport($export, status) {
+      const view = this;
+      const $generate = $export.find('.staff__grade__download__generate');
+      const isProcessing = status.status === 'processing';
+      const fill = (text, values) => text.replace(
+        /\{(\w+)\}/g,
+        (match, key) => (values[key] !== undefined ? values[key] : match),
+      );
+      let message;
+      let label;
+      let icon;
+
+      clearTimeout($export.data('poll-timer'));
+
+      if (isProcessing) {
+        message = gettext(
+          'Preparing the zip file. This can take a few minutes for large assignments; '
+          + 'you can leave this page and come back later.',
+        );
+        label = gettext('Processing\u2026');
+        icon = 'fa-spinner fa-spin';
+        $export.data('poll-timer', setTimeout(() => {
+          view.pollSubmissionsExport($export);
+        }, view.SUBMISSIONS_EXPORT_POLL_INTERVAL));
+      } else if (status.status === 'ready') {
+        message = fill(gettext('Ready: {learners} learner(s), {files} file(s). Prepared on {date}.'), {
+          learners: status.learner_count,
+          files: status.file_count,
+          date: new Date(status.completed_at).toLocaleString(),
+        });
+        if (status.missing_file_count) {
+          message += ` ${fill(
+            gettext('{count} file(s) could not be found; see missing_files.txt in the zip.'),
+            { count: status.missing_file_count },
+          )}`;
+        }
+        if (status.has_newer_submissions) {
+          message += ` ${gettext('New submissions have arrived since; prepare it again to include them.')}`;
+        }
+        label = gettext('Prepare Again');
+        icon = 'fa-refresh';
+      } else if (status.status === 'failed') {
+        if (status.message) {
+          ({ message } = status);
+        } else if (status.error === 'timeout') {
+          message = gettext('Preparing the download took too long and was stopped. Please try again.');
+        } else {
+          message = gettext('Preparing the download failed. Please try again.');
+        }
+        label = gettext('Try Again');
+        icon = 'fa-refresh';
+      } else {
+        message = gettext('Prepare a zip file of every learner\'s uploaded files and text responses.');
+        label = gettext('Prepare Download');
+        icon = 'fa-file-archive-o';
+      }
+
+      $export.removeClass('is--none is--processing is--ready is--failed').addClass(`is--${status.status}`);
+      $export.find('.staff__grade__download__message').text(message);
+      $generate.prop('disabled', isProcessing).attr('aria-busy', isProcessing ? 'true' : 'false');
+      $generate.find('.icon').attr('class', `icon fa ${icon}`);
+      $generate.find('.staff__grade__download__generate__label').text(label);
+      $export.find('.staff__grade__download__button').toggleClass('is--hidden', status.status !== 'ready');
+    }
+
+    /**
+     * ilmX: refresh the "all submissions" zip export status from the server.
+     *
+     * @param {jQuery} $export The export control.
+     */
+    pollSubmissionsExport($export) {
+      const view = this;
+      // Stop polling once the control is no longer on the page.
+      if (!$.contains(document.documentElement, $export[0])) {
+        return;
+      }
+      view.server.submissionsExportStatus().done((status) => {
+        view.renderSubmissionsExport($export, status);
+      }).fail(() => {
+        view.renderSubmissionsExport($export, { status: 'processing' });
+      });
     }
 
     /**

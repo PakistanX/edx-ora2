@@ -617,6 +617,43 @@ export class Server {
   }
 
   /**
+   * ilmX: get the status of the "all submissions" zip export.
+   *
+   * @returns {promise} A JQuery promise, which resolves with the export status
+   *     and fails with an error message.
+   */
+  submissionsExportStatus() {
+    return this.submissionsExportRequest('get_submissions_export_status');
+  }
+
+  /**
+   * ilmX: start generating the "all submissions" zip export in the background.
+   *
+   * @returns {promise} A JQuery promise, which resolves with the export status
+   *     and fails with an error message.
+   */
+  startSubmissionsExport() {
+    return this.submissionsExportRequest('start_submissions_export');
+  }
+
+  submissionsExportRequest(handler) {
+    const url = this.url(handler);
+    return $.Deferred((defer) => {
+      $.ajax({
+        type: 'POST', url, data: JSON.stringify({}), contentType: jsonContentType,
+      }).done(function (data) {
+        if (data.success) {
+          defer.resolveWith(this, [data]);
+        } else {
+          defer.rejectWith(this, [data.msg]);
+        }
+      }).fail(function () {
+        defer.rejectWith(this, [gettext('The submissions download status could not be loaded.')]);
+      });
+    }).promise();
+  }
+
+  /**
    * Cancel a submission from the peer grading pool.
    *
    * @param {object} submissionID - The id of the submission to be canceled.

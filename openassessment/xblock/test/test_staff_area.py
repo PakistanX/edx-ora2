@@ -4,13 +4,17 @@ Tests for the staff area.
 
 
 from collections import namedtuple
+import io
 import json
+import tempfile
 import urllib
+import zipfile
 
 import ddt
 from django.test.utils import override_settings
 from mock import MagicMock, Mock, PropertyMock, call, patch
 from testfixtures import log_capture
+import webob
 
 from submissions import api as sub_api
 from submissions import team_api as team_sub_api
@@ -20,6 +24,7 @@ from openassessment.assessment.api import peer as peer_api
 from openassessment.assessment.api import self as self_api
 from openassessment.assessment.api import staff as staff_api
 from openassessment.assessment.api import teams as teams_api
+from openassessment.fileupload import submissions_export
 from openassessment.fileupload.exceptions import FileUploadInternalError
 from openassessment.tests.factories import UserFactory
 from openassessment.workflow import api as workflow_api
@@ -495,7 +500,7 @@ class TestCourseStaff(XBlockHandlerTestCase):
             __, context = xblock.get_student_info_path_and_context("Bob")
 
             # Check that the right file key was passed to generate the download url
-            get_download_url.assert_called_with("test_key")
+            get_download_url.assert_called_with("test_key", file_name="test_fileName")
 
             # Check the context passed to the template
             self.assertEqual(
@@ -548,7 +553,7 @@ class TestCourseStaff(XBlockHandlerTestCase):
         # Mock the file upload API to avoid hitting S3
         with patch("openassessment.data.get_download_url") as get_download_url:
             get_download_url.return_value = Mock()
-            get_download_url.side_effect = lambda file_key: file_keys_with_images[file_key]
+            get_download_url.side_effect = lambda file_key, file_name=None: file_keys_with_images[file_key]
 
             # also fake a file_upload_type so our patched url gets rendered
             xblock.file_upload_type_raw = 'image'
@@ -556,7 +561,7 @@ class TestCourseStaff(XBlockHandlerTestCase):
             __, context = xblock.get_student_info_path_and_context("Bob")
 
             # Check that the right file key was passed to generate the download url
-            calls = [call("test_key%d" % i) for i in range(3)]
+            calls = [call("test_key%d" % i, file_name="fname%d" % i) for i in range(3)]
             get_download_url.assert_has_calls(calls)
 
             # Check the context passed to the template
@@ -1514,7 +1519,7 @@ class TestCourseStaff(XBlockHandlerTestCase):
             __, context = xblock.get_student_info_path_and_context("Bob")
 
             # Check that the right file key was passed to generate the download url
-            get_download_url.assert_called_with("test_key")
+            get_download_url.assert_called_with("test_key", file_name="test_fileName")
 
             # Check the context passed to the template
             self.assertEqual(
@@ -1578,6 +1583,81 @@ class TestCourseStaff(XBlockHandlerTestCase):
         if grades_frozen:
             self.assertIn("Unable to perform grade override", resp)
             self.assertIn("Grades are frozen", resp)
+
+    # ilmX: "Download All Submissions"
+
+    @scenario('data/self_only_scenario.xml', user_id='Bob')
+    def test_download_all_submissions_requires_staff(self, xblock):
+        xblock.xmodule_runtime = self._create_mock_runtime(
+            xblock.scope_ids.usage_id, False, False, 'Bob'
+        )
+        response = xblock.download_all_submissions(webob.Request.blank('/'))
+        self.assertEqual(response.status_code, 403)
+
+        resp = self.request(xblock, 'start_submissions_export', json.dumps({}), response_format='json')
+        self.assertFalse(resp['success'])
+
+    @scenario('data/self_only_scenario.xml', user_id='Bob')
+    def test_download_all_submissions(self, xblock):
+        xblock.xmodule_runtime = self._create_mock_runtime(
+            xblock.scope_ids.usage_id, True, False, 'Bob'
+        )
+        xblock.title = 'Essay: Week 1'
+        item = dict(STUDENT_ITEM, item_id=xblock.scope_ids.usage_id)
+        self._create_submission(dict(item, student_id='Bob'), {
+            'parts': [{'text': 'Bob Answer'}],
+            'file_keys': ['bob_1'],
+            'files_names': ['report.pdf'],
+        }, ['self'])
+
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()), \
+                patch('openassessment.fileupload.tasks.generate_submissions_export') as task, \
+                patch('openassessment.data.map_anonymized_ids_to_usernames',
+                      return_value={'Bob': 'bob_ilmx'}), \
+                patch('openassessment.data.OraDownloadData._download_file_by_key', return_value=b'bob file'):
+
+            # Nothing generated yet, so there is nothing to download.
+            context = xblock.get_download_all_submissions_context()
+            self.assertEqual(json.loads(context['submissions_export_status_json'])['status'], 'none')
+            self.assertEqual(xblock.download_all_submissions(webob.Request.blank('/')).status_code, 404)
+
+            # Starting an export marks it as processing and queues the background task.
+            resp = self.request(xblock, 'start_submissions_export', json.dumps({}), response_format='json')
+            self.assertTrue(resp['success'])
+            self.assertEqual(resp['status'], 'processing')
+            self.assertEqual(task.delay.call_count, 1)
+
+            # A second request while processing does not queue another task.
+            self.request(xblock, 'start_submissions_export', json.dumps({}), response_format='json')
+            self.assertEqual(task.delay.call_count, 1)
+
+            # Run the background task.
+            submissions_export.build_export(*task.delay.call_args[0])
+            resp = self.request(xblock, 'get_submissions_export_status', json.dumps({}), response_format='json')
+            self.assertEqual(resp['status'], 'ready')
+            self.assertEqual(resp['learner_count'], 1)
+            self.assertEqual(resp['file_count'], 1)
+            self.assertFalse(resp['has_newer_submissions'])
+
+            response = xblock.download_all_submissions(webob.Request.blank('/'))
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('filename="test_course_Essay_ Week 1.zip"', response.headers['Content-Disposition'])
+            with zipfile.ZipFile(io.BytesIO(response.body)) as archive:
+                self.assertEqual(
+                    sorted(archive.namelist()), ['bob_ilmx_report.pdf', 'bob_ilmx_response.txt', 'submissions.csv']
+                )
+                self.assertIn('Bob Answer', archive.read('bob_ilmx_response.txt').decode('utf-8'))
+
+    @scenario('data/staff_grade_scenario.xml', user_id='Bob')
+    def test_staff_area_has_download_all_submissions_control(self, xblock):
+        xblock.xmodule_runtime = self._create_mock_runtime(
+            xblock.scope_ids.usage_id, True, False, 'Bob'
+        )
+        __, context = xblock.get_staff_path_and_context()
+        self.assertEqual(json.loads(context['submissions_export_status_json'])['status'], 'none')
+        resp = self.request(xblock, 'render_staff_area', json.dumps({})).decode('utf-8')
+        self.assertIn('staff__grade__download', resp)
+        self.assertIn('Download All Submissions', resp)
 
     def _setup_xblock_and_create_submission(self, xblock, anonymous_user_id='Bob', has_team=True, **kwargs):
         """

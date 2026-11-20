@@ -3,8 +3,10 @@ The Staff Area View mixin renders all the staff-specific information used to
 determine the flow of the problem.
 """
 import copy
+import json
 import logging
 from functools import wraps
+from urllib.parse import quote
 from webob import Response
 
 from django.conf import settings
@@ -12,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from xblock.core import XBlock
 from submissions.errors import SubmissionNotFoundError
 from openassessment.assessment.errors import PeerAssessmentInternalError
+from openassessment.fileupload import submissions_export
 from openassessment.fileupload.api import delete_shared_files_for_team, remove_file
 from openassessment.workflow.errors import AssessmentWorkflowError, AssessmentWorkflowInternalError
 from openassessment.xblock.utils.data_conversion import create_submission_dict
@@ -20,6 +23,18 @@ from openassessment.xblock.utils.resolve_dates import DISTANT_FUTURE, DISTANT_PA
 from .utils.user_data import get_user_preferences
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+SUBMISSIONS_EXPORT_CHUNK_SIZE = 64 * 1024
+
+
+def _iter_and_close(file_obj):
+    """
+    ilmX: yield a file's content in chunks, closing it once it has been read.
+    """
+    try:
+        yield from iter(lambda: file_obj.read(SUBMISSIONS_EXPORT_CHUNK_SIZE), b'')
+    finally:
+        file_obj.close()
 
 
 def require_global_admin(error_key):
@@ -152,6 +167,7 @@ class StaffAreaMixin:
             context.update(
                 self.get_staff_assessment_statistics_context(student_item["course_id"], student_item["item_id"])
             )
+            context.update(self.get_download_all_submissions_context())
 
         # Include whether or not this is a team assignment
         context['is_team_assignment'] = self.is_team_assignment()
@@ -168,6 +184,96 @@ class StaffAreaMixin:
         context['studio_edit_url'] = url
 
         return path, context
+
+    # ilmX: "Download All Submissions" (zip of every learner's latest submission)
+
+    def get_download_all_submissions_context(self):
+        """
+        Context for the staff "Download All Submissions" control.
+        """
+        return {
+            'submissions_export_status_json': json.dumps(self._get_submissions_export_status()),
+            'submissions_export_download_url': self.runtime.handler_url(self, 'download_all_submissions'),
+        }
+
+    @XBlock.json_handler
+    @require_course_staff("STUDENT_GRADE", with_json_handler=True)
+    def get_submissions_export_status(self, data, suffix=''):  # pylint: disable=unused-argument
+        """
+        Status of the latest "all submissions" zip export of this ORA (none, processing, ready or failed).
+        """
+        return dict(self._get_submissions_export_status(), success=True)
+
+    @XBlock.json_handler
+    @require_course_staff("STUDENT_GRADE", with_json_handler=True)
+    def start_submissions_export(self, data, suffix=''):  # pylint: disable=unused-argument
+        """
+        Start generating, in the background, a zip of every learner's latest submission to this ORA.
+        Does nothing if an export is already being generated.
+        """
+        # Import is placed here so celery is only needed when an export is requested.
+        # pylint: disable=import-outside-toplevel
+        from openassessment.fileupload.tasks import generate_submissions_export
+
+        student_item = self.get_student_item_dict()
+        course_id, item_id = student_item['course_id'], student_item['item_id']
+        status = submissions_export.get_export_status(course_id, item_id)
+        if status['status'] != submissions_export.STATUS_PROCESSING:
+            export_id = submissions_export.start_export(course_id, item_id, requested_by=student_item['student_id'])
+            generate_submissions_export.delay(
+                export_id,
+                str(course_id),
+                str(item_id),
+                student_item['item_type'],
+                self.title or getattr(self, 'display_name', None) or '',
+                [prompt.get('description', '') for prompt in self.prompts],
+            )
+        return dict(self._get_submissions_export_status(), success=True)
+
+    @XBlock.handler
+    def download_all_submissions(self, request, suffix=''):  # pylint: disable=unused-argument
+        """
+        Download the latest generated zip of all learner submissions. Only available to course staff.
+        """
+        if not self.is_course_staff or self.in_studio_preview:
+            return Response(
+                self._("You do not have permission to download ORA submissions."),
+                status=403, content_type='text/plain', charset='utf-8',
+            )
+
+        student_item = self.get_student_item_dict()
+        status = submissions_export.get_export_status(student_item['course_id'], student_item['item_id'])
+        export_file, size = submissions_export.open_export_file(status)
+        if export_file is None:
+            return Response(
+                self._("The submissions download is not available. Please generate it again."),
+                status=404, content_type='text/plain', charset='utf-8',
+            )
+
+        file_name = status['file_name']
+        ascii_file_name = file_name.encode('ascii', 'ignore').decode('ascii').replace('"', '') or 'submissions.zip'
+        response = Response(
+            content_type='application/zip',
+            app_iter=_iter_and_close(export_file),
+            content_length=size,
+        )
+        response.headers['Content-Disposition'] = 'attachment; filename="{}"; filename*=UTF-8\'\'{}'.format(
+            ascii_file_name, quote(file_name.encode('utf-8'))
+        )
+        return response
+
+    def _get_submissions_export_status(self):
+        """
+        Export status as shown to staff, without storage internals.
+        """
+        student_item = self.get_student_item_dict()
+        course_id, item_id = student_item['course_id'], student_item['item_id']
+        status = submissions_export.get_export_status(course_id, item_id)
+        fields = ('status', 'error', 'requested_at', 'completed_at', 'file_name', 'learner_count', 'file_count',
+                  'missing_file_count')
+        result = {field: status[field] for field in fields if field in status}
+        result['has_newer_submissions'] = submissions_export.has_newer_submissions(status, course_id, item_id)
+        return result
 
     @staticmethod
     def get_staff_assessment_statistics_context(course_id, item_id):

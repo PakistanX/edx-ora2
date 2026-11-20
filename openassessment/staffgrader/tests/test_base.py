@@ -21,7 +21,7 @@ class StaffGraderMixinTestBase(XBlockHandlerTestCase):
     @contextmanager
     def _mock_get_download_url(self):
         with patch('openassessment.data.get_download_url') as mock_get_url:
-            mock_get_url.side_effect = lambda file_key: f"www.file_url.com/{file_key}"
+            mock_get_url.side_effect = lambda file_key, file_name=None: f"www.file_url.com/{file_key}"
             yield mock_get_url
 
     @contextmanager
