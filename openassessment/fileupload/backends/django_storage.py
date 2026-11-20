@@ -1,6 +1,7 @@
 """ Django backend for file upload. """
 
 
+import inspect
 import os
 from urllib.parse import urljoin
 
@@ -9,28 +10,49 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.urls import reverse
 
+from ..download_names import response_headers
 from .base import BaseBackend
+
+
+def _accepts_parameters(url_method):
+    """True when the storage's url() takes `parameters` (django-storages S3 signs them into the link)."""
+    try:
+        return 'parameters' in inspect.signature(url_method).parameters
+    except (TypeError, ValueError):
+        return False
 
 
 class Backend(BaseBackend):
     """
     Manage openassessment student files uploaded using the default django storage settings.
     """
+
+    # ilmX: get_download_url accepts the original file name (see openassessment.fileupload.download_names)
+    SUPPORTS_DOWNLOAD_NAME = True
+
     def get_upload_url(self, key, content_type):
         """
         Return the URL pointing to the ORA2 django storage upload endpoint.
         """
         return reverse("openassessment-django-storage", kwargs={'key': key})
 
-    def get_download_url(self, key):
+    def get_download_url(self, key, file_name=None):
         """
         Return the django storage download URL for the given key.
 
-        Returns None if no file exists at that location.
+        Returns None if no file exists at that location. With `file_name`, storages that sign URLs
+        (django-storages S3) get the original name and type as response headers.
         """
         path = self._get_file_path(key)
         if default_storage.exists(path):
-            storage_path = default_storage.url(path)
+            headers = response_headers(file_name)
+            if headers and _accepts_parameters(default_storage.url):
+                disposition, content_type = headers
+                storage_path = default_storage.url(path, parameters={
+                    'ResponseContentDisposition': disposition, 'ResponseContentType': content_type,
+                })
+            else:
+                storage_path = default_storage.url(path)
 
             # Return a fully-qualified URL
             lms_url = getattr(settings, 'LMS_ROOT_URL', '')

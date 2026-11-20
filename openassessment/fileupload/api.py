@@ -29,11 +29,18 @@ def get_upload_url(key, content_type):
     return backends.get_backend().get_upload_url(key, content_type)
 
 
-def get_download_url(key):
+def get_download_url(key, file_name=None):
     """
     Returns the url at which the file that corresponds to the key can be downloaded.
+
+    ilmX: with `file_name` (the learner's original file name), backends that support it make the
+    link download under that name and content type.
     """
-    url = backends.get_backend().get_download_url(key)
+    backend = backends.get_backend()
+    if file_name and getattr(backend, 'SUPPORTS_DOWNLOAD_NAME', False):
+        url = backend.get_download_url(key, file_name=file_name)
+    else:
+        url = backend.get_download_url(key)
     if not url:
         logger.warning('FileUploadError: Could not retrieve URL for key %s', key)
     return url
@@ -167,7 +174,7 @@ class FileUpload:
         """
         if self.exists:
             try:
-                return get_download_url(self.key)
+                return get_download_url(self.key, file_name=self.name)
             except FileUploadError as exc:
                 logger.exception(
                     'FileUploadError: URL retrieval failed for key %s with error %s',
