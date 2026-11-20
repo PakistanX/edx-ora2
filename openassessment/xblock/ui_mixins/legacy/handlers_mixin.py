@@ -295,7 +295,9 @@ class LegacyHandlersMixin:
             return {
                 'success': False,
                 'msg': self.config_data.translate(
-                    'This feedback has already been submitted or the submission has been cancelled.'
+                    # ilmX: point learners at a fix / support
+                    'This feedback has already been submitted or the submission has been cancelled. '
+                    'If you believe this is an error, please try refreshing the page or reach out to ilmX support.'
                 )
             }
         except (PeerAssessmentRequestError, PeerAssessmentWorkflowError, PeerAssessmentInternalError):
