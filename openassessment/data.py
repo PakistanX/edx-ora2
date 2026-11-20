@@ -9,14 +9,18 @@ from itertools import chain
 import json
 import logging
 import os
+import re
+from html import unescape
 from urllib.parse import urljoin
 from zipfile import ZipFile
 from typing import List, Set
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import FieldError
 from django.db.models import CharField, F, OuterRef, Subquery, QuerySet
 from django.db.models.functions import Coalesce
+from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 import requests
 
@@ -42,6 +46,15 @@ def _usernames_enabled():
     """
 
     return settings.FEATURES.get('ENABLE_ORA_USERNAMES_ON_DATA_EXPORT', False)
+
+
+def _emails_enabled():
+    """
+    ilmX: checks if the "Real Student Email" column is included in the ORA data report.
+
+    Enabled by default (ilmX Juniper behaviour); set ``ILMX_ORA_REPORT_INCLUDE_EMAIL = False`` to disable.
+    """
+    return getattr(settings, 'ILMX_ORA_REPORT_INCLUDE_EMAIL', True)
 
 
 def _use_read_replica(queryset):
@@ -661,6 +674,15 @@ class OraAggregateData:
             else {}
         )
         block_display_names_map = cls._map_block_usage_keys_to_display_names(course_id)
+        # ilmX: one batched lookup for the "Real Student Email" column
+        emails_enabled = _emails_enabled()
+        user_data_map = (
+            map_anonymized_ids_to_user_data(
+                {student_item['student_id'] for student_item, _, _ in all_submission_information}
+            )
+            if emails_enabled
+            else {}
+        )
 
         all_submission_uuids = [submission['uuid'] for _, submission, _ in all_submission_information]
         all_scored_peer_assessment_ids = {
@@ -697,6 +719,12 @@ class OraAggregateData:
                 submission['student_item'],
             ] + row_username_cell + [
                 student_item['student_id'],
+            ] + (
+                # ilmX: real email, falling back to the anonymized id (as on Juniper)
+                [user_data_map.get(student_item['student_id'], {}).get('email') or student_item['student_id']]
+                if emails_enabled
+                else []
+            ) + [
                 submission['submitted_at'],
                 #  Dumping required to render special characters in CSV
                 json.dumps(submission['answer'], ensure_ascii=False),
@@ -723,6 +751,7 @@ class OraAggregateData:
             'Item ID'
         ] + header_username_cell + [
             'Anonymized Student ID',
+        ] + (['Real Student Email'] if emails_enabled else []) + [
             'Date/Time Response Submitted',
             'Response',
             'Assessment Details',
@@ -1193,7 +1222,7 @@ class OraDownloadData:
         return os.path.join(directory_name, submission_filename)
 
     @classmethod
-    def create_zip_with_attachments(cls, file, submission_files_data):
+    def create_zip_with_attachments(cls, file, submission_files_data, missing_files_name=None):
         """
         Opens given stream as a zip file and writes into it all submission
         attachments and csv with list of all downloads.
@@ -1218,8 +1247,15 @@ class OraDownloadData:
         │   └── [1] - edx - the_most_dangerous_kitten.jpg
         └── submissions.csv
         ```
+
+        ilmX: when ``missing_files_name`` is given, the paths of attachments that could not be
+        downloaded are also listed in a plain-text file of that name.
+
+        Returns a dict with the number of attachments written and missing.
         """
         csv_output_buffer = StringIO()
+        missing_paths = []
+        files_written = 0
 
         csvwriter = csv.DictWriter(csv_output_buffer, cls.SUBMISSIONS_CSV_HEADER, extrasaction='ignore')
         csvwriter.writeheader()
@@ -1258,9 +1294,12 @@ class OraDownloadData:
                         'File for submission could not be downloaded for ORA submission archive. %s',
                         file_info_string
                     )
+                    missing_paths.append(file_path)
                 else:
                     file_found = True
                     zip_file.writestr(file_path, file_content)
+                    if file_data['type'] == cls.ATTACHMENT:
+                        files_written += 1
                 finally:
                     csvwriter.writerow({**file_data, 'file_found': file_found})
 
@@ -1268,9 +1307,16 @@ class OraDownloadData:
                 'submissions.csv',
                 csv_output_buffer.getvalue().encode('utf-8')
             )
+            if missing_files_name and missing_paths:
+                zip_file.writestr(
+                    missing_files_name,
+                    'The following files could not be retrieved from storage:\n\n{}\n'.format(
+                        '\n'.join(missing_paths)
+                    ).encode('utf-8'),
+                )
 
         file.seek(0)
-        return True
+        return {'file_count': files_written, 'missing_file_count': len(missing_paths)}
 
     @classmethod
     def collect_ora2_submission_files(cls, course_id):
@@ -1340,6 +1386,162 @@ class OraDownloadData:
                         file_name,
                     ),
                 }
+
+    @classmethod
+    def collect_ora2_block_submission_files(  # pylint: disable=too-many-positional-arguments
+        cls, course_id, item_id, item_type, prompts, excluded_submission_uuids=()
+    ):
+        """
+        ilmX: like ``collect_ora2_submission_files``, but for a single ORA and with the
+        flat ilmX file naming used by the staff "Download All Submissions" zip:
+
+        * ``<username>_<file name>`` for every uploaded file;
+        * ``<username>_response.txt`` with the learner's text answers under their prompts.
+
+        Only each learner's latest submission is included; ``excluded_submission_uuids``
+        (e.g. cancelled submissions) are skipped. Learners whose anonymous id has no user
+        are named by their anonymous id.
+
+        Returns a list of file data dicts for ``create_zip_with_attachments``.
+        """
+        excluded = set(excluded_submission_uuids)
+        submissions = [
+            submission
+            for submission in sub_api.get_all_submissions(course_id, item_id, item_type, read_replica=False)
+            if submission['uuid'] not in excluded
+        ]
+        usernames = _safe_map_anonymized_ids_to_usernames([s['student_id'] for s in submissions])
+        prompt_texts = [_html_to_text(prompt) for prompt in prompts or []]
+
+        files = []
+        used_paths = set()
+        for submission in submissions:
+            student_id = submission['student_id']
+            username = _safe_filename(usernames.get(student_id) or student_id)
+            texts, uploads = _parse_answer(submission.get('answer'))
+            common = {'course_id': course_id, 'block_id': item_id, 'student_id': student_id}
+
+            for index, (key, name, description, size) in enumerate(uploads):
+                name = (name or '').strip()
+                if not name or name == key:
+                    name = f'file_{index + 1}'
+                files.append(dict(
+                    common,
+                    type=cls.ATTACHMENT,
+                    key=key,
+                    name=name,
+                    description=description,
+                    size=size,
+                    file_path=_unique_path(f'{username}_{_safe_filename(name) or "file"}', used_paths),
+                ))
+
+            response_text = _format_response_text(username, submission, texts, prompt_texts)
+            if response_text:
+                files.append(dict(
+                    common,
+                    type=cls.TEXT,
+                    key='',
+                    name='response.txt',
+                    description='Submission text.',
+                    content=response_text,
+                    size=len(response_text),
+                    file_path=_unique_path(f'{username}_response.txt', used_paths),
+                ))
+        return files
+
+
+def _parse_answer(raw_answer):
+    """
+    ilmX: (text responses, [(key, name, description, size)]) of a submission's raw answer.
+
+    Uses ``OraSubmissionAnswerFactory``; answers in a shape it does not recognise (e.g. legacy
+    ``{"text": ...}`` answers or partial file lists) are read leniently instead of failing the export.
+    """
+    raw_answer = raw_answer if isinstance(raw_answer, dict) else {'text': raw_answer or ''}
+    try:
+        answer = OraSubmissionAnswerFactory.parse_submission_raw_answer(raw_answer)
+    except VersionNotFoundException:
+        parts = raw_answer.get('parts')
+        if isinstance(parts, list):
+            texts = [part.get('text', '') if isinstance(part, dict) else '' for part in parts]
+        else:
+            texts = [raw_answer.get('text') or '']
+        keys = raw_answer.get('file_keys') or ([raw_answer['file_key']] if raw_answer.get('file_key') else [])
+        names = raw_answer.get('files_names', raw_answer.get('files_name')) or []
+        descriptions = raw_answer.get('files_descriptions') or []
+        uploads = [
+            (
+                key,
+                names[index] if index < len(names) else '',
+                descriptions[index] if index < len(descriptions) else '',
+                0,
+            )
+            for index, key in enumerate(keys) if key
+        ]
+        return texts, uploads
+    return answer.get_text_responses(), [
+        (upload.key, upload.name, upload.description, upload.size) for upload in answer.get_file_uploads()
+    ]
+
+
+def _safe_filename(name):
+    """
+    ilmX: replace characters that are unsafe in file names (path separators, control and reserved characters).
+    """
+    return re.sub(r'[\\/:*?"<>|\x00-\x1f]+', '_', name or '').strip(' .')
+
+
+def _unique_path(name, used_paths):
+    """
+    ilmX: ``name``, suffixed with a counter if it is already used in the archive.
+    """
+    base, ext = os.path.splitext(name)
+    candidate, counter = name, 1
+    while candidate in used_paths:
+        counter += 1
+        candidate = f'{base}_{counter}{ext}'
+    used_paths.add(candidate)
+    return candidate
+
+
+def _html_to_text(html):
+    """
+    ilmX: plain text of an (HTML) prompt.
+    """
+    return unescape(strip_tags(html or '')).strip()
+
+
+def _safe_map_anonymized_ids_to_usernames(anonymized_ids):
+    """
+    ilmX: ``map_anonymized_ids_to_usernames``, or {} outside the LMS (no anonymous user ids).
+    """
+    try:
+        return map_anonymized_ids_to_usernames(list(set(anonymized_ids)))
+    except FieldError:
+        return {}
+
+
+def _format_response_text(username, submission, texts, prompt_texts):
+    """
+    ilmX: plain-text rendering of a submission's text answers, or '' if it has none.
+    """
+    texts = [(text or '').strip() for text in texts]
+    if not any(texts):
+        return ''
+    lines = [
+        f'Learner: {username}',
+        f"Submitted at: {submission.get('submitted_at') or ''}",
+    ]
+    for index, text in enumerate(texts):
+        lines.extend([
+            '',
+            f'=== Prompt {index + 1} ===' if len(texts) > 1 else '=== Prompt ===',
+            prompt_texts[index] if index < len(prompt_texts) else '',
+            '',
+            '--- Response ---',
+            text,
+        ])
+    return '\n'.join(lines) + '\n'
 
 
 class SubmissionFileUpload:
@@ -1563,10 +1765,10 @@ class ZippedListSubmissionAnswer(OraSubmissionAnswer):
         except IndexError:
             return default
 
-    def _safe_get_download_url(self, key):
+    def _safe_get_download_url(self, key, file_name=None):
         """ Helper to get a download URL """
         try:
-            return get_download_url(key)
+            return get_download_url(key, file_name=file_name)
         except FileUploadInternalError as exc:
             logger.exception(
                 "FileUploadError: Download url for file key %s failed with error %s",
@@ -1596,7 +1798,7 @@ class ZippedListSubmissionAnswer(OraSubmissionAnswer):
                 name = self._index_safe_get(i, file_names, default_missing_value)
                 description = self._index_safe_get(i, file_descriptions, default_missing_value)
                 size = self._index_safe_get(i, file_sizes, 0)
-                url = None if not generate_urls else self._safe_get_download_url(key)
+                url = None if not generate_urls else self._safe_get_download_url(key, file_name=name)
                 file_upload = SubmissionFileUpload(
                     key,
                     name=name,

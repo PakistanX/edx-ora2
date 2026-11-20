@@ -8,6 +8,7 @@ from django.conf import settings
 import botocore
 import boto3
 
+from ..download_names import response_headers
 from ..exceptions import FileUploadInternalError
 from .base import BaseBackend
 
@@ -18,6 +19,9 @@ log = logging.getLogger(
 
 class Backend(BaseBackend):
     """ S3 Bucked File Upload Backend. """
+
+    # ilmX: get_download_url accepts the original file name (see openassessment.fileupload.download_names)
+    SUPPORTS_DOWNLOAD_NAME = True
 
     def get_upload_url(self, key, content_type):
         bucket_name, key_name = self._retrieve_parameters(key)
@@ -38,15 +42,19 @@ class Backend(BaseBackend):
             )
             raise FileUploadInternalError(ex) from ex
 
-    def get_download_url(self, key):
+    def get_download_url(self, key, file_name=None):
         bucket_name, key_name = self._retrieve_parameters(key)
         try:
             conn = _connect_to_s3()
             if not object_exists(conn, bucket_name, key_name):
                 return ""
+            params = {"Bucket": bucket_name, "Key": key_name}
+            headers = response_headers(file_name)
+            if headers:
+                params["ResponseContentDisposition"], params["ResponseContentType"] = headers
             return conn.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": bucket_name, "Key": key_name},
+                Params=params,
                 ExpiresIn=self.DOWNLOAD_URL_TIMEOUT,
             )
         except Exception as ex:

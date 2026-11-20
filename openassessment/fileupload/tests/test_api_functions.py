@@ -273,7 +273,7 @@ def test_file_descriptors_after_sharing_with_old_team(
     ]
 
     assert expected_descriptors == actual_descriptors
-    mock_get_download_url.assert_called_once_with(key_b)
+    mock_get_download_url.assert_called_once_with(key_b, file_name='File B')
     mock_remove_file.assert_called_once_with(key_deleted)
 
 
@@ -345,6 +345,6 @@ def test_team_files_metadata(mock_get_download_url, shared_file_upload_fixture, 
     ]
     assert expected_descriptors == actual_descriptors
     mock_get_download_url.assert_has_calls([
-        mock.call(key_beta),
-        mock.call(key_delta),
+        mock.call(key_beta, file_name='File Beta'),
+        mock.call(key_delta, file_name='File Delta'),
     ])

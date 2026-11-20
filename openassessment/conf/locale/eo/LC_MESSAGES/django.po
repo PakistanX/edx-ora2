@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: edx-ora2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-13 17:55-0500\n"
+"POT-Creation-Date: 2026-10-30 16:57+0000\n"
 "PO-Revision-Date: 2014-06-04 15:41-0400\n"
 "Last-Translator: Muhammad Ayub khan <ayubkhan@edx.org>\n"
 "Language-Team: openedx-translation <openedx-translation@googlegroups.com>\n"
@@ -1533,6 +1533,12 @@ msgstr ""
 "Fïlés thät wéré üplöädéd ßý ýöü: Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт αмєт, ¢σηѕє¢тє#"
 
 #: templates/legacy/oa_uploaded_file.html
+msgid "Download the files associated with this submission:"
+msgstr ""
+"Döwnlöäd thé fïlés ässöçïätéd wïth thïs süßmïssïön: Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт "
+"αмєт, ¢σηѕє¢тєтυя α#"
+
+#: templates/legacy/oa_uploaded_file.html
 msgid ""
 "Caution: These files were uploaded by another course learner and have not "
 "been verified, screened, approved, reviewed, or endorsed by the site "
@@ -2334,6 +2340,25 @@ msgstr "Réléäsé Däté Ⱡ'σяєм ιρѕυм ∂σłσя ѕ#"
 msgid "N/A"
 msgstr "N/À Ⱡ'σяєм#"
 
+#: templates/legacy/staff_area/oa_staff_download_submissions.html
+msgid "All Submissions"
+msgstr "Àll Süßmïssïöns Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт α#"
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html
+msgid ""
+"Prepare a zip file of every learner's uploaded files and text responses."
+msgstr ""
+"Prépäré ä zïp fïlé öf évérý léärnér's üplöädéd fïlés änd téxt réspönsés. "
+"Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт αмєт, ¢σηѕє¢тєтυя#"
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html
+msgid "Prepare Download"
+msgstr "Prépäré Döwnlöäd Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт αм#"
+
+#: templates/legacy/staff_area/oa_staff_download_submissions.html
+msgid "Download All Submissions"
+msgstr "Döwnlöäd Àll Süßmïssïöns Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт αмєт, ¢ση#"
+
 #: templates/legacy/staff_area/oa_staff_grade_learners.html
 msgid "Staff Assessment"
 msgstr "Stäff Àsséssmént Ⱡ'σяєм ιρѕυм ∂σłσя ѕιт αм#"
@@ -3064,6 +3089,18 @@ msgid "You do not have permission to access ORA staff grading."
 msgstr ""
 "Ýöü dö nöt hävé pérmïssïön tö äççéss ÖRÀ stäff grädïng. Ⱡ'σяєм ιρѕυм ∂σłσя "
 "ѕιт αмєт, ¢σηѕє¢тєтυя α#"
+
+#: xblock/staff_area_mixin.py
+msgid "You do not have permission to download ORA submissions."
+msgstr ""
+"Ýöü dö nöt hävé pérmïssïön tö döwnlöäd ÖRÀ süßmïssïöns. Ⱡ'σяєм ιρѕυм ∂σłσя "
+"ѕιт αмєт, ¢σηѕє¢тєтυя α#"
+
+#: xblock/staff_area_mixin.py
+msgid "The submissions download is not available. Please generate it again."
+msgstr ""
+"Thé süßmïssïöns döwnlöäd ïs nöt äväïläßlé. Pléäsé généräté ït ägäïn. Ⱡ'σяєм "
+"ιρѕυм ∂σłσя ѕιт αмєт, ¢σηѕє¢тєтυя #"
 
 #: xblock/staff_area_mixin.py
 msgid "Pending"
